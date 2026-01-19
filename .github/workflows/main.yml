@@ -1,4 +1,4 @@
-name: Flutter Build and Test
+name: Flutter Android APK Build
 
 on:
   push:
@@ -11,40 +11,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Repo checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Java setup (Android build ke liye REQUIRED)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 3️⃣ Flutter setup
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
           channel: 'stable'
+          cache: true
 
+      # 4️⃣ Flutter doctor (debug ke liye)
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      # 5️⃣ Dependencies install
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze code
+      # 6️⃣ Static analysis
+      - name: Analyze project
         run: flutter analyze
 
-      - name: Build release APK
+      # 7️⃣ Build release APK
+      - name: Build APK (release)
         run: flutter build apk --release
 
-      - name: Upload APK as an artifact
+      # 8️⃣ Upload APK as artifact (DOWNLOADABLE)
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: live-interpreter-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Commit Android folder to separate repo
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'actions@github.com'
-          git clone https://github.com/username/android-repo.git
-          cp -R android/* android-repo/
-          cd android-repo
-          git add .
-          git commit -m "Update Android folder"
-          git push origin main
-
-      - name: Cleanup
-        run: rm -rf android-repo
